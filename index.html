@@ -46,9 +46,12 @@
     .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 1.5rem; border-radius: 12px; background: var(--card-bg); text-align: center; }
     .card-back { transform: rotateY(180deg); background: #e8f5e9; }
     
+    /* Bouton pour tourner la carte dans les deux sens */
+    .btn-flip-toggle { margin-top: 10px; background: #e9ecef; color: #495057; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .btn-flip-toggle:active { background: #dee2e6; }
+
     /* Carrousel dynamique */
     .carousel-wrapper { position: relative; width: 100%; flex: 1; min-height: 0; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; }
-    
     .carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; width: 100%; height: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; align-items: center; }
     .carousel::-webkit-scrollbar { display: none; }
     .carousel img { flex: 0 0 100%; max-height: 100%; width: 100%; object-fit: contain; scroll-snap-align: center; border-radius: 8px; cursor: zoom-in; background: #f0f0f0; -webkit-user-drag: none; user-select: none; }
@@ -60,10 +63,13 @@
     
     .carousel-hint { font-size: 0.85rem; color: #888; margin-top: 5px; flex-shrink: 0; }
     
-    #card-common-name { font-size: 1.8rem; }
+    /* Textes de la carte */
+    #card-common-name { font-size: 1.8rem; color: var(--primary); }
     .latin-name { font-style: italic; color: #555; margin-top: 0.2rem; font-size: 1.1rem; }
     .card-front-text { font-size: 1.1rem; color: #333; margin-top: 10px; font-weight: 500; flex-shrink: 0; }
+    .card-back-text { font-size: 1.05rem; color: #444; margin-top: 10px; font-weight: 500; line-height: 1.4; flex-shrink: 0; }
     
+    /* Actions */
     .actions-container { display: flex; width: 100%; justify-content: center; min-height: 55px; margin-top: 5px; }
     .btn-reveal { background: var(--primary); color: white; width: 100%; max-width: 400px; padding: 1rem; font-size: 1.2rem; }
     .grade-actions { display: none; gap: 1.5rem; width: 100%; justify-content: center; }
@@ -131,7 +137,8 @@
     <div id="study-box" style="width: 100%; display:none;">
       <div class="card-container">
         <div class="card" id="flashcard">
-          <!-- FACE RECTO -->
+          
+          <!-- FACE RECTO (Question) -->
           <div class="card-face card-front">
             <div class="carousel-wrapper" id="front-wrapper">
               <button class="carousel-btn left" onclick="scrollCarousel('front', -1, event)">&#10094;</button>
@@ -140,23 +147,34 @@
             </div>
             <p class="carousel-hint" id="front-hint"></p>
             <div id="card-front-text" class="card-front-text" style="display:none;"></div>
+            
+            <!-- Bouton pour revenir au verso (Caché au début) -->
+            <button id="btn-return-verso" class="btn-flip-toggle" style="display:none;" onclick="toggleFlip(event)">🔄 Revenir à la réponse</button>
           </div>
-          <!-- FACE VERSO -->
+          
+          <!-- FACE VERSO (Réponse) -->
           <div class="card-face card-back">
-            <div>
+            <div style="width: 100%; flex-shrink: 0; margin-bottom: 10px;">
               <h2 id="card-common-name">Nom commun</h2>
               <p class="latin-name" id="card-latin-name">Nom latin</p>
+              <p id="card-back-text" class="card-back-text" style="display:none;"></p>
             </div>
+            
             <div class="carousel-wrapper" id="back-wrapper">
               <button class="carousel-btn left" onclick="scrollCarousel('back', -1, event)">&#10094;</button>
               <div class="carousel" id="back-carousel"></div>
               <button class="carousel-btn right" onclick="scrollCarousel('back', 1, event)">&#10095;</button>
             </div>
             <p class="carousel-hint" id="back-hint"></p>
+            
+            <!-- Bouton pour consulter le recto depuis le verso -->
+            <button class="btn-flip-toggle" onclick="toggleFlip(event)">🔄 Revoir le recto</button>
           </div>
+          
         </div>
       </div>
       
+      <!-- Boutons d'action sous la carte -->
       <div class="actions-container">
         <button class="btn-reveal" id="btn-reveal" onclick="flipCard()">Voir la réponse</button>
         <div class="grade-actions" id="grade-actions">
@@ -183,12 +201,11 @@
       <h2 id="form-title" style="margin-bottom: 1rem; color: var(--primary); font-size: 1.5rem;">Nouvelle plante</h2>
       
       <div class="form-group">
-        <label for="common-name">Nom commun</label>
+        <label for="common-name">Nom commun de la plante</label>
         <input type="text" id="common-name" required>
+        
         <label for="latin-name" style="margin-top: 15px;">Nom latin (optionnel)</label>
         <input type="text" id="latin-name">
-        <label for="front-text" style="margin-top: 15px;">Texte / Indice sur le recto (optionnel)</label>
-        <input type="text" id="front-text" placeholder="ex : Famille, habitat, détails...">
       </div>
 
       <div class="form-group">
@@ -196,13 +213,19 @@
         <input type="file" id="front-imgs" accept="image/*" multiple onchange="handleFiles(event, 'preview-front')">
         <div class="preview-box" id="preview-front"></div>
         <button type="button" class="btn-clear" onclick="clearImages('front')">Vider ces images</button>
+        
+        <label for="front-text" style="margin-top: 15px;">Texte / Indice sur le recto (optionnel)</label>
+        <input type="text" id="front-text" placeholder="ex : Habitat, saison...">
       </div>
 
       <div class="form-group">
-        <label for="back-imgs">2. Images de réponse (Verso)</label>
+        <label for="back-imgs">2. Images de réponse (Verso - optionnel)</label>
         <input type="file" id="back-imgs" accept="image/*" multiple onchange="handleFiles(event, 'preview-back')">
         <div class="preview-box" id="preview-back"></div>
         <button type="button" class="btn-clear" onclick="clearImages('back')">Vider ces images</button>
+        
+        <label for="back-text" style="margin-top: 15px;">Texte / Infos sur le verso (optionnel)</label>
+        <input type="text" id="back-text" placeholder="ex : Confusion possible avec l'ail des ours...">
       </div>
       
       <button type="submit" class="btn-submit" id="btn-submit">Enregistrer la plante</button>
@@ -298,6 +321,7 @@
       plantData.common = document.getElementById('common-name').value.trim();
       plantData.latin = document.getElementById('latin-name').value.trim();
       plantData.frontText = document.getElementById('front-text').value.trim();
+      plantData.backText = document.getElementById('back-text').value.trim();
       plantData.frontImages = frontImagesData;
       plantData.backImages = backImagesData;
 
@@ -367,6 +391,8 @@
         document.getElementById('common-name').value = editingPlant.common;
         document.getElementById('latin-name').value = editingPlant.latin || '';
         document.getElementById('front-text').value = editingPlant.frontText || '';
+        document.getElementById('back-text').value = editingPlant.backText || '';
+        
         frontImagesData = editingPlant.frontImages && editingPlant.frontImages.length > 0 ? editingPlant.frontImages : (editingPlant.image ? [editingPlant.image] : []);
         backImagesData = editingPlant.backImages || [];
         renderPreviews();
@@ -512,6 +538,9 @@
       cardEl.classList.remove('flipped');
       document.getElementById('btn-reveal').style.display = 'block';
       document.getElementById('grade-actions').style.display = 'none';
+      
+      // On cache le bouton "Retourner au verso" sur la face avant
+      document.getElementById('btn-return-verso').style.display = 'none';
 
       const current = studyDeck[currentIndex];
       const frontImgs = current.frontImages && current.frontImages.length > 0 ? current.frontImages : (current.image ? [current.image] : []);
@@ -520,13 +549,22 @@
       buildCarousel('front-wrapper', 'front-carousel', frontImgs, 'front-hint');
       buildCarousel('back-wrapper', 'back-carousel', backImgs, 'back-hint');
       
-      // Gestion du texte optionnel sur le recto
+      // Gestion du texte optionnel sur le RECTO
       const frontTextEl = document.getElementById('card-front-text');
       if (current.frontText && current.frontText.trim() !== '') {
         frontTextEl.textContent = current.frontText;
         frontTextEl.style.display = 'block';
       } else {
         frontTextEl.style.display = 'none';
+      }
+      
+      // Gestion du texte optionnel sur le VERSO
+      const backTextEl = document.getElementById('card-back-text');
+      if (current.backText && current.backText.trim() !== '') {
+        backTextEl.textContent = current.backText;
+        backTextEl.style.display = 'block';
+      } else {
+        backTextEl.style.display = 'none';
       }
 
       document.getElementById('card-common-name').textContent = current.common;
@@ -538,6 +576,15 @@
       document.getElementById('flashcard').classList.add('flipped'); 
       document.getElementById('btn-reveal').style.display = 'none';
       document.getElementById('grade-actions').style.display = 'flex';
+      
+      // Une fois la réponse révélée, on affiche le bouton "revenir au verso" sur le recto
+      document.getElementById('btn-return-verso').style.display = 'inline-block';
+    }
+    
+    // Fonction appelée par les boutons 🔄
+    function toggleFlip(e) {
+      if(e) e.stopPropagation();
+      document.getElementById('flashcard').classList.toggle('flipped');
     }
     
     function gradeCard(success) {
