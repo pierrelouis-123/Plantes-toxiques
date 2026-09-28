@@ -30,28 +30,34 @@
 
     /* Zone Révision */
     .card-container { width: 100%; perspective: 1000px; height: 420px; margin-bottom: 1rem; }
-    /* Curseur normal au lieu de pointer car la carte n'est plus cliquable */
     .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .card.flipped { transform: rotateY(180deg); }
     .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1rem; border-radius: 12px; background: var(--card-bg); text-align: center; }
     .card-back { transform: rotateY(180deg); background: #e8f5e9; }
     
-    /* Carrousel */
-    .carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; width: 100%; height: 280px; padding-bottom: 10px; margin-bottom: 0.5rem; }
-    .carousel::-webkit-scrollbar { height: 6px; }
-    .carousel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-    .carousel img { flex: 0 0 100%; max-height: 100%; object-fit: contain; scroll-snap-align: center; border-radius: 8px; cursor: zoom-in; background: #f0f0f0; }
-    .carousel-hint { font-size: 0.75rem; color: #888; margin-top: -5px; margin-bottom: 10px; }
+    /* Carrousel Amélioré */
+    .carousel-wrapper { position: relative; width: 100%; height: 280px; margin-bottom: 0.5rem; }
+    .carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; width: 100%; height: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+    .carousel::-webkit-scrollbar { display: none; }
+    .carousel img { flex: 0 0 100%; max-height: 100%; object-fit: contain; scroll-snap-align: center; border-radius: 8px; cursor: zoom-in; background: #f0f0f0; -webkit-user-drag: none; user-select: none; }
+    
+    /* Boutons de navigation du carrousel */
+    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 35px; height: 35px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 10; backdrop-filter: blur(2px); }
+    .carousel-btn:active { background: rgba(0,0,0,0.8); }
+    .carousel-btn.left { left: 5px; }
+    .carousel-btn.right { right: 5px; }
+
+    .carousel-hint { font-size: 0.8rem; color: #888; margin-top: 10px; margin-bottom: 5px; }
     .latin-name { font-style: italic; color: #555; margin-top: 0.4rem; }
     
-    .actions-container { display: flex; width: 100%; justify-content: center; min-height: 45px; }
+    .actions-container { display: flex; width: 100%; justify-content: center; min-height: 45px; margin-top: 5px; }
     .btn-reveal { background: var(--primary); color: white; width: 100%; max-width: 250px; padding: 0.8rem; font-size: 1rem; }
     .grade-actions { display: none; gap: 1rem; width: 100%; justify-content: center; }
     .btn-fail { background: var(--danger); color: white; width: 120px; }
     .btn-pass { background: var(--success); color: white; width: 120px; }
     .stats { margin-top: 1rem; font-size: 0.9rem; color: #666; text-align: center; width: 100%; }
 
-    /* Zone Ajout/Modif */
+    /* Zone Ajout/Modif & Gérer (inchangées) */
     .form-group { width: 100%; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.3rem; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     label { font-weight: 600; font-size: 0.9rem; }
     input[type="text"], input[type="file"] { width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; }
@@ -61,7 +67,6 @@
     .preview-box img { max-height: 80px; border-radius: 6px; flex: 0 0 auto; }
     .btn-clear { background: #e9ecef; color: #495057; font-size: 0.75rem; padding: 0.3rem 0.6rem; margin-top: 0.3rem; align-self: flex-start; }
 
-    /* Zone Gérer */
     .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 100%; }
     .list-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
     .list-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; background: #eee; flex-shrink: 0; }
@@ -97,17 +102,26 @@
     </div>
     
     <div id="study-box" style="width: 100%;">
-      <!-- Note : on a retiré le onclick="flipCard()" ici -->
       <div class="card-container">
         <div class="card" id="flashcard">
+          <!-- FACE RECTO -->
           <div class="card-face card-front">
-            <div class="carousel" id="front-carousel"></div>
+            <div class="carousel-wrapper" id="front-wrapper">
+              <button class="carousel-btn left" onclick="scrollCarousel('front', -1, event)">&#10094;</button>
+              <div class="carousel" id="front-carousel"></div>
+              <button class="carousel-btn right" onclick="scrollCarousel('front', 1, event)">&#10095;</button>
+            </div>
             <p class="carousel-hint" id="front-hint"></p>
           </div>
+          <!-- FACE VERSO -->
           <div class="card-face card-back">
             <h2 id="card-common-name">Nom commun</h2>
             <p class="latin-name" id="card-latin-name" style="margin-bottom: 10px;">Nom latin</p>
-            <div class="carousel" id="back-carousel" style="height: 180px;"></div>
+            <div class="carousel-wrapper" id="back-wrapper" style="height: 160px;">
+              <button class="carousel-btn left" onclick="scrollCarousel('back', -1, event)">&#10094;</button>
+              <div class="carousel" id="back-carousel"></div>
+              <button class="carousel-btn right" onclick="scrollCarousel('back', 1, event)">&#10095;</button>
+            </div>
             <p class="carousel-hint" id="back-hint"></p>
           </div>
         </div>
@@ -125,7 +139,7 @@
     </div>
   </div>
 
-  <!-- PANNEAU GÉRER (LISTE) -->
+  <!-- PANNEAU GÉRER -->
   <div id="manage-panel" class="panel">
     <div style="width: 100%; margin-bottom: 1rem; text-align: center;">
       <p style="font-size: 0.9rem; color: #555;">Toutes tes plantes enregistrées :</p>
@@ -212,7 +226,6 @@
     function handleFiles(event, previewElementId) {
       const files = event.target.files;
       const targetArray = previewElementId === 'preview-front' ? frontImagesData : backImagesData;
-      
       Array.from(files).forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -240,25 +253,16 @@
 
     function savePlant(e) {
       e.preventDefault();
-      
       if (frontImagesData.length === 0) {
         alert("Il faut au moins une image pour le recto !");
         return;
       }
-
       const common = document.getElementById('common-name').value.trim();
       const latin = document.getElementById('latin-name').value.trim();
 
       const tx = db.transaction('plants', 'readwrite');
       const store = tx.objectStore('plants');
-      
-      const plantData = {
-        common,
-        latin,
-        frontImages: frontImagesData,
-        backImages: backImagesData,
-        dateAdded: new Date()
-      };
+      const plantData = { common, latin, frontImages: frontImagesData, backImages: backImagesData, dateAdded: new Date() };
 
       if (editingId) {
         plantData.id = editingId;
@@ -266,7 +270,6 @@
       } else {
         store.add(plantData);
       }
-
       tx.oncomplete = () => {
         alert(editingId ? 'Plante modifiée !' : 'Plante ajoutée !');
         resetForm();
@@ -327,14 +330,12 @@
         
         document.getElementById('common-name').value = plant.common;
         document.getElementById('latin-name').value = plant.latin || '';
-        
         frontImagesData = plant.frontImages && plant.frontImages.length > 0 ? plant.frontImages : (plant.image ? [plant.image] : []);
         backImagesData = plant.backImages || [];
-        
         renderPreviews();
         
         document.getElementById('form-title').textContent = "Modifier : " + plant.common;
-        document.getElementById('btn-submit').textContent = "Mettre à jour la plante";
+        document.getElementById('btn-submit').textContent = "Mettre à jour";
         document.getElementById('btn-cancel').style.display = 'block';
         
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -344,10 +345,7 @@
       };
     }
 
-    function cancelEdit() {
-      resetForm();
-      switchTab('manage');
-    }
+    function cancelEdit() { resetForm(); switchTab('manage'); }
 
     function deletePlant(id) {
       if (confirm("Supprimer définitivement cette plante ?")) {
@@ -367,38 +365,54 @@
       };
     }
 
-    function buildCarousel(containerId, images, hintId) {
-      const container = document.getElementById(containerId);
+    // Fonction améliorée pour créer le carrousel avec les flèches
+    function buildCarousel(wrapperId, carouselId, images, hintId) {
+      const wrapper = document.getElementById(wrapperId);
+      const carousel = document.getElementById(carouselId);
       const hint = document.getElementById(hintId);
-      container.innerHTML = '';
+      const btnLeft = wrapper.querySelector('.left');
+      const btnRight = wrapper.querySelector('.right');
+      
+      carousel.innerHTML = '';
       
       if (!images || images.length === 0) {
-        container.style.display = 'none';
+        wrapper.style.display = 'none';
         hint.style.display = 'none';
         return;
       }
-      container.style.display = 'flex';
+      wrapper.style.display = 'block';
+      
       images.forEach(imgSrc => {
         const img = document.createElement('img');
         img.src = imgSrc;
         img.onclick = (e) => { e.stopPropagation(); openZoom(imgSrc); };
-        container.appendChild(img);
+        carousel.appendChild(img);
       });
+      
       if (images.length > 1) {
         hint.style.display = 'block';
-        hint.textContent = `← ${images.length} photos (glisse) →`;
+        hint.textContent = `📸 ${images.length} photos`;
+        btnLeft.style.display = 'flex';
+        btnRight.style.display = 'flex';
       } else {
         hint.style.display = 'none';
+        btnLeft.style.display = 'none';
+        btnRight.style.display = 'none';
       }
+    }
+
+    // Nouvelle fonction pour scroller avec les boutons
+    function scrollCarousel(side, direction, e) {
+      e.stopPropagation(); // Évite tout conflit avec un autre clic
+      const carousel = document.getElementById(side + '-carousel');
+      const scrollAmount = carousel.clientWidth + 10; // Largeur image + espace
+      carousel.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
     }
 
     function showCard() {
       const cardEl = document.getElementById('flashcard');
-      
-      // On remet la carte sur la face avant
       cardEl.classList.remove('flipped');
       
-      // On affiche le bouton "Voir la réponse" et on cache les boutons d'évaluation
       document.getElementById('btn-reveal').style.display = 'block';
       document.getElementById('grade-actions').style.display = 'none';
 
@@ -414,17 +428,16 @@
       const frontImgs = current.frontImages && current.frontImages.length > 0 ? current.frontImages : (current.image ? [current.image] : []);
       const backImgs = current.backImages || [];
 
-      buildCarousel('front-carousel', frontImgs, 'front-hint');
-      buildCarousel('back-carousel', backImgs, 'back-hint');
+      buildCarousel('front-wrapper', 'front-carousel', frontImgs, 'front-hint');
+      buildCarousel('back-wrapper', 'back-carousel', backImgs, 'back-hint');
+      
       document.getElementById('card-common-name').textContent = current.common;
       document.getElementById('card-latin-name').textContent = current.latin || '';
       document.getElementById('stats-display').textContent = `Carte ${currentIndex + 1} / ${deck.length}`;
     }
 
     function flipCard() { 
-      // On retourne la carte
       document.getElementById('flashcard').classList.add('flipped'); 
-      // On cache le bouton "Voir la réponse" et on affiche les boutons d'évaluation
       document.getElementById('btn-reveal').style.display = 'none';
       document.getElementById('grade-actions').style.display = 'flex';
     }
