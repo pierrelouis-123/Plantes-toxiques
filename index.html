@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title>Flashcards Botanique</title>
   <style>
     :root {
@@ -13,37 +13,69 @@
       --text: #212529;
       --danger: #e63946;
       --success: #38b000;
+      --warning: #ffb703;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background-color: var(--bg); color: var(--text); padding: 1rem; display: flex; flex-direction: column; align-items: center; }
     header { margin-bottom: 1.5rem; text-align: center; }
     h1 { color: var(--primary); font-size: 1.8rem; }
-    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-    button { cursor: pointer; border: none; border-radius: 8px; padding: 0.6rem 1.2rem; font-weight: 600; transition: 0.2s; }
-    .tab-btn { background: #dee2e6; color: #495057; }
+    
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; width: 100%; max-width: 500px; justify-content: center; }
+    button { cursor: pointer; border: none; border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; transition: 0.2s; }
+    .tab-btn { background: #dee2e6; color: #495057; flex: 1; font-size: 0.9rem; }
     .tab-btn.active { background: var(--primary); color: white; }
+    
     .panel { display: none; width: 100%; max-width: 500px; flex-direction: column; align-items: center; }
     .panel.active { display: flex; }
 
     /* Zone Révision */
-    .card-container { width: 100%; perspective: 1000px; height: 380px; margin-bottom: 1rem; }
-    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; }
+    .card-container { width: 100%; perspective: 1000px; height: 420px; margin-bottom: 1rem; }
+    /* Curseur normal au lieu de pointer car la carte n'est plus cliquable */
+    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .card.flipped { transform: rotateY(180deg); }
     .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1rem; border-radius: 12px; background: var(--card-bg); text-align: center; }
     .card-back { transform: rotateY(180deg); background: #e8f5e9; }
-    .card-face img { max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 8px; margin-bottom: 0.5rem; }
+    
+    /* Carrousel */
+    .carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; width: 100%; height: 280px; padding-bottom: 10px; margin-bottom: 0.5rem; }
+    .carousel::-webkit-scrollbar { height: 6px; }
+    .carousel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+    .carousel img { flex: 0 0 100%; max-height: 100%; object-fit: contain; scroll-snap-align: center; border-radius: 8px; cursor: zoom-in; background: #f0f0f0; }
+    .carousel-hint { font-size: 0.75rem; color: #888; margin-top: -5px; margin-bottom: 10px; }
     .latin-name { font-style: italic; color: #555; margin-top: 0.4rem; }
-    .actions { display: flex; gap: 1rem; width: 100%; justify-content: center; }
-    .btn-fail { background: var(--danger); color: white; }
-    .btn-pass { background: var(--success); color: white; }
-    .stats { margin-top: 1rem; font-size: 0.9rem; color: #666; }
+    
+    .actions-container { display: flex; width: 100%; justify-content: center; min-height: 45px; }
+    .btn-reveal { background: var(--primary); color: white; width: 100%; max-width: 250px; padding: 0.8rem; font-size: 1rem; }
+    .grade-actions { display: none; gap: 1rem; width: 100%; justify-content: center; }
+    .btn-fail { background: var(--danger); color: white; width: 120px; }
+    .btn-pass { background: var(--success); color: white; width: 120px; }
+    .stats { margin-top: 1rem; font-size: 0.9rem; color: #666; text-align: center; width: 100%; }
 
-    /* Zone Ajout */
-    .form-group { width: 100%; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+    /* Zone Ajout/Modif */
+    .form-group { width: 100%; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.3rem; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     label { font-weight: 600; font-size: 0.9rem; }
     input[type="text"], input[type="file"] { width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; }
-    .btn-submit { background: var(--primary); color: white; width: 100%; padding: 0.8rem; margin-top: 0.5rem; }
-    .preview-box img { max-height: 150px; border-radius: 6px; margin-top: 0.5rem; }
+    .btn-submit { background: var(--primary); color: white; width: 100%; padding: 1rem; margin-top: 0.5rem; font-size: 1rem; }
+    .btn-cancel { background: #6c757d; color: white; width: 100%; padding: 1rem; margin-top: 0.5rem; font-size: 1rem; display: none; }
+    .preview-box { display: flex; overflow-x: auto; gap: 10px; margin-top: 0.5rem; }
+    .preview-box img { max-height: 80px; border-radius: 6px; flex: 0 0 auto; }
+    .btn-clear { background: #e9ecef; color: #495057; font-size: 0.75rem; padding: 0.3rem 0.6rem; margin-top: 0.3rem; align-self: flex-start; }
+
+    /* Zone Gérer */
+    .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 100%; }
+    .list-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+    .list-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; background: #eee; flex-shrink: 0; }
+    .list-text { display: flex; flex-direction: column; overflow: hidden; }
+    .list-text strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem; }
+    .list-text span { font-size: 0.8rem; color: #666; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .list-btns { display: flex; gap: 5px; flex-shrink: 0; }
+    .btn-edit { background: var(--warning); color: #000; padding: 0.5rem; font-size: 0.8rem; }
+    .btn-delete { background: var(--danger); color: white; padding: 0.5rem; font-size: 0.8rem; }
+
+    /* Modal Zoom */
+    #zoom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; touch-action: pinch-zoom; }
+    #zoom-img { max-width: 95%; max-height: 90%; object-fit: contain; }
+    .close-zoom { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; background: none; border: none; cursor: pointer; font-weight: bold; padding: 10px; }
   </style>
 </head>
 <body>
@@ -54,64 +86,97 @@
 
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('study')">Réviser</button>
-    <button class="tab-btn" onclick="switchTab('add')">Ajouter une plante</button>
+    <button class="tab-btn" onclick="switchTab('manage')">Gérer</button>
+    <button class="tab-btn" onclick="switchTab('add')">Ajouter</button>
   </div>
 
   <!-- PANNEAU RÉVISION -->
   <div id="study-panel" class="panel active">
     <div id="deck-empty" style="display:none; text-align:center; padding: 2rem;">
-      <p>Aucune carte disponible pour le moment.</p>
+      <p>Aucune carte disponible. Va dans "Ajouter" !</p>
     </div>
-
+    
     <div id="study-box" style="width: 100%;">
-      <div class="card-container" onclick="flipCard()">
+      <!-- Note : on a retiré le onclick="flipCard()" ici -->
+      <div class="card-container">
         <div class="card" id="flashcard">
           <div class="card-face card-front">
-            <img id="card-img" src="" alt="Plante">
-            <p style="color: #888; font-size: 0.8rem;">(Clique pour révéler le nom)</p>
+            <div class="carousel" id="front-carousel"></div>
+            <p class="carousel-hint" id="front-hint"></p>
           </div>
           <div class="card-face card-back">
             <h2 id="card-common-name">Nom commun</h2>
-            <p class="latin-name" id="card-latin-name">Nom latin</p>
+            <p class="latin-name" id="card-latin-name" style="margin-bottom: 10px;">Nom latin</p>
+            <div class="carousel" id="back-carousel" style="height: 180px;"></div>
+            <p class="carousel-hint" id="back-hint"></p>
           </div>
         </div>
       </div>
-
-      <div class="actions">
-        <button class="btn-fail" onclick="gradeCard(false)">À revoir</button>
-        <button class="btn-pass" onclick="gradeCard(true)">Retenu</button>
+      
+      <div class="actions-container">
+        <button class="btn-reveal" id="btn-reveal" onclick="flipCard()">Voir la réponse</button>
+        <div class="grade-actions" id="grade-actions">
+          <button class="btn-fail" onclick="gradeCard(false)">À revoir</button>
+          <button class="btn-pass" onclick="gradeCard(true)">Retenu</button>
+        </div>
       </div>
-
+      
       <p class="stats" id="stats-display">Carte 0 / 0</p>
     </div>
   </div>
 
-  <!-- PANNEAU AJOUT -->
+  <!-- PANNEAU GÉRER (LISTE) -->
+  <div id="manage-panel" class="panel">
+    <div style="width: 100%; margin-bottom: 1rem; text-align: center;">
+      <p style="font-size: 0.9rem; color: #555;">Toutes tes plantes enregistrées :</p>
+    </div>
+    <div id="plants-list" style="width: 100%;"></div>
+  </div>
+
+  <!-- PANNEAU AJOUT / MODIFICATION -->
   <div id="add-panel" class="panel">
     <form id="add-form" onsubmit="savePlant(event)">
-      <div class="form-group">
-        <label for="img-file">Photo de la plante</label>
-        <input type="file" id="img-file" accept="image/*" required onchange="previewImage(event)">
-        <div class="preview-box" id="preview-box"></div>
-      </div>
+      <h2 id="form-title" style="margin-bottom: 1rem; color: var(--primary); font-size: 1.3rem;">Nouvelle plante</h2>
+      
       <div class="form-group">
         <label for="common-name">Nom commun</label>
-        <input type="text" id="common-name" placeholder="ex : Pissenlit, Monstera..." required>
+        <input type="text" id="common-name" required>
+        <label for="latin-name" style="margin-top: 10px;">Nom latin (optionnel)</label>
+        <input type="text" id="latin-name">
       </div>
+
       <div class="form-group">
-        <label for="latin-name">Nom latin (optionnel)</label>
-        <input type="text" id="latin-name" placeholder="ex : Taraxacum officinale">
+        <label for="front-imgs">1. Images à deviner (Recto)</label>
+        <input type="file" id="front-imgs" accept="image/*" multiple onchange="handleFiles(event, 'preview-front')">
+        <div class="preview-box" id="preview-front"></div>
+        <button type="button" class="btn-clear" onclick="clearImages('front')">Vider ces images</button>
       </div>
-      <button type="submit" class="btn-submit">Enregistrer la plante</button>
+
+      <div class="form-group">
+        <label for="back-imgs">2. Images de réponse (Verso)</label>
+        <input type="file" id="back-imgs" accept="image/*" multiple onchange="handleFiles(event, 'preview-back')">
+        <div class="preview-box" id="preview-back"></div>
+        <button type="button" class="btn-clear" onclick="clearImages('back')">Vider ces images</button>
+      </div>
+      
+      <button type="submit" class="btn-submit" id="btn-submit">Enregistrer la plante</button>
+      <button type="button" class="btn-cancel" id="btn-cancel" onclick="cancelEdit()">Annuler la modification</button>
     </form>
   </div>
 
+  <!-- MODAL ZOOM -->
+  <div id="zoom-modal" onclick="closeZoom()">
+    <button class="close-zoom">&times;</button>
+    <img id="zoom-img" src="" alt="Zoom">
+  </div>
+
   <script>
-    // --- GESTION DE LA BASE INDEXEDDB (PERSISTANTE EN LOCAL) ---
     let db;
     let deck = [];
     let currentIndex = 0;
-    let currentImageBlob = null;
+    let frontImagesData = [];
+    let backImagesData = [];
+    let editingId = null; 
 
     const request = indexedDB.open('BotanicaDB', 1);
     request.onupgradeneeded = (e) => {
@@ -128,54 +193,173 @@
     function switchTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+      
       if (tab === 'study') {
-        document.querySelector('.tab-btn:first-child').classList.add('active');
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
         document.getElementById('study-panel').classList.add('active');
         loadDeck();
+      } else if (tab === 'manage') {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('manage-panel').classList.add('active');
+        loadManageList();
       } else {
-        document.querySelector('.tab-btn:last-child').classList.add('active');
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
         document.getElementById('add-panel').classList.add('active');
+        if(!editingId) resetForm();
       }
     }
 
-    function previewImage(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        currentImageBlob = e.target.result;
-        document.getElementById('preview-box').innerHTML = `<img src="${currentImageBlob}" alt="Aperçu">`;
-      };
-      reader.readAsDataURL(file);
+    function handleFiles(event, previewElementId) {
+      const files = event.target.files;
+      const targetArray = previewElementId === 'preview-front' ? frontImagesData : backImagesData;
+      
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          targetArray.push(e.target.result);
+          renderPreviews();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function clearImages(side) {
+      if(side === 'front') frontImagesData = [];
+      if(side === 'back') backImagesData = [];
+      renderPreviews();
+      document.getElementById(side + '-imgs').value = '';
+    }
+
+    function renderPreviews() {
+      const frontBox = document.getElementById('preview-front');
+      const backBox = document.getElementById('preview-back');
+      frontBox.innerHTML = ''; backBox.innerHTML = '';
+      frontImagesData.forEach(src => frontBox.innerHTML += `<img src="${src}">`);
+      backImagesData.forEach(src => backBox.innerHTML += `<img src="${src}">`);
     }
 
     function savePlant(e) {
       e.preventDefault();
+      
+      if (frontImagesData.length === 0) {
+        alert("Il faut au moins une image pour le recto !");
+        return;
+      }
+
       const common = document.getElementById('common-name').value.trim();
       const latin = document.getElementById('latin-name').value.trim();
 
       const tx = db.transaction('plants', 'readwrite');
-      tx.objectStore('plants').add({
+      const store = tx.objectStore('plants');
+      
+      const plantData = {
         common,
         latin,
-        image: currentImageBlob,
+        frontImages: frontImagesData,
+        backImages: backImagesData,
         dateAdded: new Date()
-      });
+      };
+
+      if (editingId) {
+        plantData.id = editingId;
+        store.put(plantData);
+      } else {
+        store.add(plantData);
+      }
 
       tx.oncomplete = () => {
-        document.getElementById('add-form').reset();
-        document.getElementById('preview-box').innerHTML = '';
-        currentImageBlob = null;
-        alert('Plante ajoutée avec succès !');
-        switchTab('study');
+        alert(editingId ? 'Plante modifiée !' : 'Plante ajoutée !');
+        resetForm();
+        switchTab('manage'); 
       };
+    }
+
+    function resetForm() {
+      editingId = null;
+      document.getElementById('add-form').reset();
+      frontImagesData = [];
+      backImagesData = [];
+      renderPreviews();
+      document.getElementById('form-title').textContent = "Nouvelle plante";
+      document.getElementById('btn-submit').textContent = "Enregistrer la plante";
+      document.getElementById('btn-cancel').style.display = 'none';
+    }
+
+    function loadManageList() {
+      const tx = db.transaction('plants', 'readonly');
+      const request = tx.objectStore('plants').getAll();
+      request.onsuccess = () => {
+        const listEl = document.getElementById('plants-list');
+        listEl.innerHTML = '';
+        const plants = request.result;
+        
+        if (plants.length === 0) {
+          listEl.innerHTML = '<p style="text-align:center;">Aucune plante enregistrée.</p>';
+          return;
+        }
+
+        plants.forEach(p => {
+          const thumbSrc = (p.frontImages && p.frontImages.length > 0) ? p.frontImages[0] : (p.image ? p.image : '');
+          listEl.innerHTML += `
+            <div class="list-item">
+              <div class="list-info">
+                <img src="${thumbSrc}" class="list-thumb">
+                <div class="list-text">
+                  <strong>${p.common}</strong>
+                  <span>${p.latin || ''}</span>
+                </div>
+              </div>
+              <div class="list-btns">
+                <button class="btn-edit" onclick="editPlant(${p.id})">✏️</button>
+                <button class="btn-delete" onclick="deletePlant(${p.id})">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+      };
+    }
+
+    function editPlant(id) {
+      const tx = db.transaction('plants', 'readonly');
+      tx.objectStore('plants').get(id).onsuccess = (e) => {
+        const plant = e.target.result;
+        editingId = plant.id;
+        
+        document.getElementById('common-name').value = plant.common;
+        document.getElementById('latin-name').value = plant.latin || '';
+        
+        frontImagesData = plant.frontImages && plant.frontImages.length > 0 ? plant.frontImages : (plant.image ? [plant.image] : []);
+        backImagesData = plant.backImages || [];
+        
+        renderPreviews();
+        
+        document.getElementById('form-title').textContent = "Modifier : " + plant.common;
+        document.getElementById('btn-submit').textContent = "Mettre à jour la plante";
+        document.getElementById('btn-cancel').style.display = 'block';
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        document.getElementById('add-panel').classList.add('active');
+      };
+    }
+
+    function cancelEdit() {
+      resetForm();
+      switchTab('manage');
+    }
+
+    function deletePlant(id) {
+      if (confirm("Supprimer définitivement cette plante ?")) {
+        const tx = db.transaction('plants', 'readwrite');
+        tx.objectStore('plants').delete(id);
+        tx.oncomplete = () => loadManageList();
+      }
     }
 
     function loadDeck() {
       const tx = db.transaction('plants', 'readonly');
-      const store = tx.objectStore('plants');
-      const request = store.getAll();
-
+      const request = tx.objectStore('plants').getAll();
       request.onsuccess = () => {
         deck = request.result;
         currentIndex = 0;
@@ -183,35 +367,82 @@
       };
     }
 
+    function buildCarousel(containerId, images, hintId) {
+      const container = document.getElementById(containerId);
+      const hint = document.getElementById(hintId);
+      container.innerHTML = '';
+      
+      if (!images || images.length === 0) {
+        container.style.display = 'none';
+        hint.style.display = 'none';
+        return;
+      }
+      container.style.display = 'flex';
+      images.forEach(imgSrc => {
+        const img = document.createElement('img');
+        img.src = imgSrc;
+        img.onclick = (e) => { e.stopPropagation(); openZoom(imgSrc); };
+        container.appendChild(img);
+      });
+      if (images.length > 1) {
+        hint.style.display = 'block';
+        hint.textContent = `← ${images.length} photos (glisse) →`;
+      } else {
+        hint.style.display = 'none';
+      }
+    }
+
     function showCard() {
       const cardEl = document.getElementById('flashcard');
+      
+      // On remet la carte sur la face avant
       cardEl.classList.remove('flipped');
+      
+      // On affiche le bouton "Voir la réponse" et on cache les boutons d'évaluation
+      document.getElementById('btn-reveal').style.display = 'block';
+      document.getElementById('grade-actions').style.display = 'none';
 
       if (deck.length === 0) {
         document.getElementById('deck-empty').style.display = 'block';
         document.getElementById('study-box').style.display = 'none';
         return;
       }
-
       document.getElementById('deck-empty').style.display = 'none';
       document.getElementById('study-box').style.display = 'block';
 
       const current = deck[currentIndex];
-      document.getElementById('card-img').src = current.image;
+      const frontImgs = current.frontImages && current.frontImages.length > 0 ? current.frontImages : (current.image ? [current.image] : []);
+      const backImgs = current.backImages || [];
+
+      buildCarousel('front-carousel', frontImgs, 'front-hint');
+      buildCarousel('back-carousel', backImgs, 'back-hint');
       document.getElementById('card-common-name').textContent = current.common;
       document.getElementById('card-latin-name').textContent = current.latin || '';
       document.getElementById('stats-display').textContent = `Carte ${currentIndex + 1} / ${deck.length}`;
     }
 
-    function flipCard() {
-      document.getElementById('flashcard').classList.toggle('flipped');
+    function flipCard() { 
+      // On retourne la carte
+      document.getElementById('flashcard').classList.add('flipped'); 
+      // On cache le bouton "Voir la réponse" et on affiche les boutons d'évaluation
+      document.getElementById('btn-reveal').style.display = 'none';
+      document.getElementById('grade-actions').style.display = 'flex';
     }
-
+    
     function gradeCard(success) {
       if (deck.length === 0) return;
-      // Passage à la carte suivante
       currentIndex = (currentIndex + 1) % deck.length;
       showCard();
+    }
+    
+    function openZoom(src) {
+      document.getElementById('zoom-img').src = src;
+      document.getElementById('zoom-modal').style.display = 'flex';
+    }
+    
+    function closeZoom() {
+      document.getElementById('zoom-modal').style.display = 'none';
+      document.getElementById('zoom-img').src = "";
     }
   </script>
 </body>
